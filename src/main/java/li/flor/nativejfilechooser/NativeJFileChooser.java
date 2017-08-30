@@ -30,7 +30,6 @@ import java.awt.HeadlessException;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import javafx.application.Platform;
@@ -343,14 +342,7 @@ public class NativeJFileChooser extends JFileChooser {
                 fileChooser.getExtensionFilters()
                         .add(new FileChooser.ExtensionFilter("All files", "*.*"));
             } else {
-                for (Iterator<FileChooser.ExtensionFilter> it
-                        = fileChooser.getExtensionFilters().iterator(); it.hasNext();) {
-                    FileChooser.ExtensionFilter filter = it.next();
-                    if (filter.getExtensions().size() == 1
-                            && filter.getExtensions().contains("*.*")) {
-                        it.remove();
-                    }
-                }
+                fileChooser.getExtensionFilters().removeIf(filter -> filter.getExtensions().contains("*.*"));
             }
         }
     }
