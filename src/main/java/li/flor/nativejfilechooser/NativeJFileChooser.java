@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Steffen Flor
+ * Copyright (c) 2018, Steffen Flor
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -45,19 +45,18 @@ import javax.swing.filechooser.FileSystemView;
 
 /**
  * This is a drop-in replacement for Swing's file chooser. Instead of displaying
- * the Swing file chooser, it makes use of the JavaFX file chooser. JavaFX uses
- * the OS's native file chooser, which is much better than the Java one.
- * Technically, this class is a waste of memory, but its use is convenient.
- * Furthermore, if JavaFX is not available, the default file chooser will be
- * displayed instead. Of course, this class will not compile if you don't have
- * an JDK 8 or higher that has JavaFX support. Since this class will have to
- * call the constructor of JFileChooser, it won't increase the performance of
- * the file chooser; if anything, it might further decrease it. Please note that
- * some methods have not been overwritten and may not have any impact on the
- * file chooser. Sometimes, the new JavaFX file chooser does not provide certain
- * functionality. One feature that is not supported is the selection of files
- * AND directories. If trying to set this using setFileSelectionMode(), still
- * only files will be selectable.
+ * Swing's file chooser, it makes use of JavaFX's file chooser. JavaFX uses the
+ * OS's native file chooser. Technically, this class is a memory hog, but its
+ * use is convenient. Furthermore, if JavaFX is not available, the default file
+ * chooser will be displayed instead. Of course, this class will not compile if
+ * you don't have an JDK 8 or higher that has JavaFX support. Since this class
+ * will have to call the constructor of JFileChooser, it won't increase the
+ * performance of the file chooser; if anything, it might further decrease it.
+ * Please note that some methods have not been overwritten and may not have any
+ * impact on the file chooser. Sometimes, the new JavaFX file chooser does not
+ * provide certain functionality. One feature that is not supported is the
+ * selection of files AND directories. If trying to set this using
+ * setFileSelectionMode(), still only files will be selectable.
  *
  * @author Steffen Flor
  * @version 1.6.3
@@ -114,7 +113,7 @@ public class NativeJFileChooser extends JFileChooser {
     }
 
     @Override
-    public int showOpenDialog(Component parent) throws HeadlessException {
+    public int showOpenDialog(final Component parent) throws HeadlessException {
         if (!FX_AVAILABLE) {
             return super.showOpenDialog(parent);
         }
@@ -123,7 +122,11 @@ public class NativeJFileChooser extends JFileChooser {
         Platform.runLater(new Runnable() {
             @Override
             public void run() {
-//                parent.setEnabled(false);
+
+                if (parent != null) {
+                    parent.setEnabled(false);
+                }
+
                 if (isDirectorySelectionEnabled()) {
                     currentFile = directoryChooser.showDialog(null);
                 } else {
@@ -134,7 +137,6 @@ public class NativeJFileChooser extends JFileChooser {
                     }
                 }
                 latch.countDown();
-//                parent.setEnabled(true);
             }
 
         });
@@ -142,6 +144,10 @@ public class NativeJFileChooser extends JFileChooser {
             latch.await();
         } catch (InterruptedException ex) {
             throw new RuntimeException(ex);
+        } finally {
+            if (parent != null) {
+                parent.setEnabled(true);
+            }
         }
 
         if (isMultiSelectionEnabled()) {
@@ -161,7 +167,7 @@ public class NativeJFileChooser extends JFileChooser {
     }
 
     @Override
-    public int showSaveDialog(Component parent) throws HeadlessException {
+    public int showSaveDialog(final Component parent) throws HeadlessException {
         if (!FX_AVAILABLE) {
             return super.showSaveDialog(parent);
         }
@@ -171,14 +177,17 @@ public class NativeJFileChooser extends JFileChooser {
         Platform.runLater(new Runnable() {
             @Override
             public void run() {
-//                parent.setEnabled(false);
+
+                if (parent != null) {
+                    parent.setEnabled(false);
+                }
+
                 if (isDirectorySelectionEnabled()) {
                     currentFile = directoryChooser.showDialog(null);
                 } else {
                     currentFile = fileChooser.showSaveDialog(null);
                 }
                 latch.countDown();
-//                parent.setEnabled(true);
             }
 
         });
@@ -186,6 +195,10 @@ public class NativeJFileChooser extends JFileChooser {
             latch.await();
         } catch (InterruptedException ex) {
             throw new RuntimeException(ex);
+        } finally {
+            if (parent != null) {
+                parent.setEnabled(true);
+            }
         }
 
         if (currentFile != null) {
@@ -338,21 +351,23 @@ public class NativeJFileChooser extends JFileChooser {
         if (!FX_AVAILABLE) {
             return;
         }
-        if (differs) {
-            if (bool) {
-                fileChooser.getExtensionFilters()
-                        .add(new FileChooser.ExtensionFilter("All files", "*.*"));
-            } else {
-                for (Iterator<FileChooser.ExtensionFilter> it
-                        = fileChooser.getExtensionFilters().iterator(); it.hasNext();) {
-                    FileChooser.ExtensionFilter filter = it.next();
-                    if (filter.getExtensions().size() == 1
-                            && filter.getExtensions().contains("*.*")) {
-                        it.remove();
-                    }
+        if (!differs) {
+            return;
+        }
+        if (bool) {
+            fileChooser.getExtensionFilters()
+                    .add(new FileChooser.ExtensionFilter("All files", "*.*"));
+        } else {
+            for (Iterator<FileChooser.ExtensionFilter> it
+                    = fileChooser.getExtensionFilters().iterator(); it.hasNext();) {
+                FileChooser.ExtensionFilter filter = it.next();
+                if (filter.getExtensions().size() == 1
+                        && filter.getExtensions().contains("*.*")) {
+                    it.remove();
                 }
             }
         }
+
     }
 
     private void initFxFileChooser(File currentFile) {
