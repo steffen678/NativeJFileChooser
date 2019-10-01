@@ -11,7 +11,7 @@ NativeJFileChooser is available via Maven:
     <dependency>
         <groupId>li.flor</groupId>
         <artifactId>native-j-file-chooser</artifactId>
-        <version>1.6.3</version>
+        <version>1.6.4</version>
     </dependency>
 
 Simply replace
